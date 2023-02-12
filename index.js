@@ -62,25 +62,24 @@ app.get("/info", (request, response) => {
 });
 
 // Get person
-app.get(`${baseUrl}/:id`, (request, response) => {
-  Person.findById(request.params.id).then((person) => {
-    if (!person) {
-      return response.status(404).end();
-    }
-    response.json(person);
-  });
+app.get(`${baseUrl}/:id`, (request, response, next) => {
+  Person.findById(request.params.id)
+    .then((person) => {
+      if (!person) {
+        return response.status(404).end();
+      }
+      response.json(person);
+    })
+    .catch((err) => next(err));
 });
 
 // Delete person
-app.delete(`${baseUrl}/:id`, (request, response) => {
-  Person.findById(request.params.id).then((person) => {
-    if (person) {
-      person.delete();
-    } else {
-      response.statusMessage = "Person not found";
-    }
-    response.status(204).end();
-  });
+app.delete(`${baseUrl}/:id`, (request, response, next) => {
+  Person.findByIdAndRemove(request.params.id)
+    .then((result) => {
+      response.status(204).end();
+    })
+    .catch((err) => next(err));
 });
 
 // Create person
@@ -107,9 +106,33 @@ app.post(baseUrl, (request, response) => {
   });
 });
 
+app.put(`${baseUrl}/:id`, (request, response, next) => {
+  const person = {
+    name: request.body.name,
+    number: request.body.number,
+  };
+  Person.findByIdAndUpdate(request.params.id, person, {new: true})
+    .then((updatedPerson) => {
+      if (!updatedPerson) {
+        return response.status(400).send();
+      }
+      response.json(updatedPerson);
+    })
+    .catch((err) => next(err));
+});
 // use endpoint middleware only AFTER all other endpoints
 app.use(unknownEndpoint);
 
+// use Error handler middleware
+const errorHandler = (error, request, response, next) => {
+  console.log(error.message);
+
+  if (error.name == "CastError") {
+    return response.status(400).send({error: "Malformatted id"});
+  }
+};
+
+app.use(errorHandler);
 // Init port + listen
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
