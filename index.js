@@ -83,27 +83,20 @@ app.delete(`${baseUrl}/:id`, (request, response, next) => {
 });
 
 // Create person
-app.post(baseUrl, (request, response) => {
+app.post(baseUrl, (request, response, next) => {
   const body = request.body;
 
-  if (!body) {
-    return response.status(400).json({error: "Content missing"});
-  }
-  if (!(body.name && body.number)) {
-    return response.status(400).json({error: "Missing fields"});
-  }
-  Person.find({name: body.name}).then((result) => {
-    if (result.length > 0) {
-      return response.status(400).json({error: "Name must be unique"});
-    }
-    const person = new Person({
-      name: body.name,
-      number: body.number,
-    });
-    person.save().then((result) => {
-      response.json(result);
-    });
+  const person = new Person({
+    name: body.name,
+    number: body.number,
   });
+
+  person
+    .save()
+    .then((result) => {
+      response.json(result);
+    })
+    .catch((err) => next(err));
 });
 
 app.put(`${baseUrl}/:id`, (request, response, next) => {
@@ -111,7 +104,11 @@ app.put(`${baseUrl}/:id`, (request, response, next) => {
     name: request.body.name,
     number: request.body.number,
   };
-  Person.findByIdAndUpdate(request.params.id, person, {new: true})
+  Person.findByIdAndUpdate(request.params.id, person, {
+    new: true,
+    runValidators: true,
+    context: "query",
+  })
     .then((updatedPerson) => {
       if (!updatedPerson) {
         return response.status(400).send();
@@ -129,6 +126,8 @@ const errorHandler = (error, request, response, next) => {
 
   if (error.name == "CastError") {
     return response.status(400).send({error: "Malformatted id"});
+  } else if ((error.name = "ValidationError")) {
+    return response.status(400).send({error: error.message});
   }
 };
 
