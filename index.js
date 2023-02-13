@@ -1,24 +1,24 @@
 // Import dotenv - for environment variables
-require("dotenv").config();
+require('dotenv').config();
 // Import express
-const express = require("express");
+const express = require('express');
 // Import morgan logger
-const morgan = require("morgan");
+const morgan = require('morgan');
 // initialize app object
 const app = express();
 // Import cors
-const cors = require("cors");
-const Person = require("./models/person");
+const cors = require('cors');
+const Person = require('./models/person');
 
 // Allow cross origin resource sharing, so localhost:3000 (frontend) and
 // localhost:3001 (backend) can communicate
 app.use(cors());
 // initialize json parser for requests. request body => request.body
 app.use(express.json());
-app.use(express.static("build"));
+app.use(express.static('build'));
 
 // initialize morgan token for body
-morgan.token("body", (req, res) => {
+morgan.token('body', (req, res) => {
   return JSON.stringify(req.body);
 });
 
@@ -29,33 +29,28 @@ app.use(
       tokens.method(req, res),
       tokens.url(req, res),
       tokens.status(req, res),
-      tokens.res(req, res, "content-length"),
-      "-",
-      tokens["response-time"](req, res),
-      "ms",
+      tokens.res(req, res, 'content-length'),
+      '-',
+      tokens['response-time'](req, res),
+      'ms',
       tokens.body(req, res),
-    ].join(" ");
-  })
+    ].join(' ');
+  }),
 );
 
-// create unknown endpoint middleware
-const unknownEndpoint = (request, response) => {
-  response.status(404).send({error: "unknown endpoint"});
-};
-
-const baseUrl = "/api/persons";
+const baseUrl = '/api/persons';
 
 // Get all
-app.get(baseUrl, (request, response) => {
+app.get(baseUrl, (_request, response) => {
   Person.find({}).then((persons) => response.json(persons));
 });
 
 // Get info
-app.get("/info", (request, response) => {
+app.get('/info', (_request, response) => {
   Person.find({}).then((persons) => {
     const msg =
-      `<p>Phonebook has info for ${persons.length} people</p>` +
-      `<p>${new Date()}</p>`;
+      `<p>Phonebook has info for ${persons.length}   people</p>` +
+      `<p>${new Date()}  </p>`;
 
     response.send(msg);
   });
@@ -76,7 +71,7 @@ app.get(`${baseUrl}/:id`, (request, response, next) => {
 // Delete person
 app.delete(`${baseUrl}/:id`, (request, response, next) => {
   Person.findByIdAndRemove(request.params.id)
-    .then((result) => {
+    .then(() => {
       response.status(204).end();
     })
     .catch((err) => next(err));
@@ -107,7 +102,7 @@ app.put(`${baseUrl}/:id`, (request, response, next) => {
   Person.findByIdAndUpdate(request.params.id, person, {
     new: true,
     runValidators: true,
-    context: "query",
+    context: 'query',
   })
     .then((updatedPerson) => {
       if (!updatedPerson) {
@@ -117,17 +112,23 @@ app.put(`${baseUrl}/:id`, (request, response, next) => {
     })
     .catch((err) => next(err));
 });
+
 // use endpoint middleware only AFTER all other endpoints
+// create unknown endpoint middleware
+const unknownEndpoint = (_request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' });
+};
+
 app.use(unknownEndpoint);
 
 // use Error handler middleware
-const errorHandler = (error, request, response, next) => {
+const errorHandler = (error, _request, response, _next) => {
   console.log(error.message);
 
-  if (error.name == "CastError") {
-    return response.status(400).send({error: "Malformatted id"});
-  } else if ((error.name = "ValidationError")) {
-    return response.status(400).send({error: error.message});
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'Malformatted id' });
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).send({ error: error.message });
   }
 };
 
@@ -135,5 +136,5 @@ app.use(errorHandler);
 // Init port + listen
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}  `);
 });
